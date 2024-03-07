@@ -38,7 +38,7 @@ static int easyhttp_request(lua_State *L)
 
     CURL *curl = curl_easy_init();
     const char *err = NULL;
-    struct easyhttp_Options opts = easyhttp_parse_options(L, 2, &err);
+    struct easyhttp_Options opts = easyhttp_options_parse(L, 2, &err);
     if (err) {
         lua_pushnil(L);
         lua_pushstring(L, err);
@@ -52,7 +52,7 @@ static int easyhttp_request(lua_State *L)
         return 2;
     }
 
-    easyhttp_set_options(opts, curl);
+    easyhttp_options_set(opts, curl);
     curl_easy_setopt(curl, CURLOPT_URL, url);
 
     if (!opts.output_file) {
@@ -61,6 +61,15 @@ static int easyhttp_request(lua_State *L)
     } else {
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, *opts.output_file);
     }
+
+    struct easyhttp_Headers *headers = easyhttp_headers_create();
+    if (!headers) {
+        lua_pushnil(L);
+        lua_pushliteral(L, "failed to create result headers");
+        return 2;
+    }
+    curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, easyhttp_headers_write);
+    curl_easy_setopt(curl, CURLOPT_HEADERDATA, &headers);
 
     CURLcode res = curl_easy_perform(curl);
     if (res != CURLE_OK) {
@@ -75,19 +84,18 @@ static int easyhttp_request(lua_State *L)
     if (opts.output_file)
         lua_pushboolean(L, 1);
     else
-        lua_pushlstring(L, buffer->data, buffer->size);
+        lua_pushlstring(L, buffer->data, buffer->length);
     lua_pushinteger(L, status_code);
 
     // Get headers
     lua_newtable(L);
-    struct curl_header *header = NULL;
-    while ((header = curl_easy_nextheader(curl, CURLH_HEADER, -1, header))) {
-        const char *key = header->name, *value = header->value;
-        lua_pushstring(L, key);
-        lua_pushstring(L, value);
+    for (size_t i = 0; i < headers->length; i++) {
+        lua_pushstring(L, headers->headers[i].key);
+        lua_pushstring(L, headers->headers[i].value);
         lua_settable(L, -3);
     }
 
+    easyhttp_options_free(&opts);
     curl_easy_cleanup(curl);
     free(buffer);
     return 3;

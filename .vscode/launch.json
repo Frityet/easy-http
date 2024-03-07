@@ -10,8 +10,8 @@
             "name": "Debug",
             "program": "/usr/local/opt/lua/bin/lua5.4",
             "args": [
-                "-e", "package.path=\"/Users/frityet/Documents/easy-http/./lua_modules/share/lua/5.4/?.lua;/Users/frityet/Documents/easy-http/./lua_modules/share/lua/5.4/?/init.lua;/Users/frityet/.luarocks/share/lua/5.4/?.lua;/Users/frityet/.luarocks/share/lua/5.4/?/init.lua;/usr/local/share/lua/5.4/?.lua;/usr/local/share/lua/5.4/?/init.lua;\"..package.path;package.cpath=\"/Users/frityet/Documents/easy-http/./lua_modules/lib/lua/5.4/?.so;/Users/frityet/.luarocks/lib/lua/5.4/?.so;/usr/local/lib/lua/5.4/?.so;\"..package.cpath",
-                "${workspaceFolder}/test.lua"
+                "-e", "package.path=\"/Users/frityet/Documents/easy-http/./lua_modules/share/lua/5.4/?.lua;/Users/frityet/Documents/easy-http/./lua_modules/share/lua/5.4/?/init.lua;/Users/frityet/.luarocks/share/lua/5.4/?.lua;/Users/frityet/.luarocks/share/lua/5.4/?/init.lua;/usr/local/share/lua/5.4/?.lua;/usr/local/share/lua/5.4/?/init.lua;\"..package.path;package.cpath=\"/Users/frityet/Documents/easy-http/./lua_modules/lib/lua/5.4/?.so;/Users/frityet/.luarocks/lib/lua/5.4/?.so;/usr/local/lib/lua/5.4/?.so;\"..package.cpath;local k,l,_=pcall(require,\"luarocks.loader\") _=k and l.add_context(\"busted\",\"2.2.0-1\")",
+                "${workspaceFolder}/lua_modules/lib/luarocks/rocks-5.4/busted/2.2.0-1/bin/busted",
             ],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "Build",

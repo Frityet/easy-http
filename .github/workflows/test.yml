@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         lua-version: ["5.4", "5.3", "5.2", "5.1", "luajit"]
-        os: ["ubuntu-latest", "macos-latest", "windows-latest"] # Ensure all desired OS are listed
+        os: ["ubuntu-latest", "macos-latest", "windows-latest"]
         include:
           - os: "macos-latest"
             lua-version: "5.4"

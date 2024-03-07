@@ -58,8 +58,6 @@ static int buffer_write(void *ptr, size_t size, size_t nmemb, void *userp)
     struct easyhttp_AsyncRequest *request = userp; //to check `cancel` flag
     if (request->cancelled) {
         thrd_exit(EASYHTTP_EXIT_CANCELLED);
-
-        __extension__ __builtin_unreachable();
         return 0;
     }
 
@@ -67,6 +65,43 @@ static int buffer_write(void *ptr, size_t size, size_t nmemb, void *userp)
     int ret = easyhttp_buffer_write(ptr, size, nmemb, &request->request.response);
     mtx_unlock(&request->mutex);
     return ret;
+}
+
+static size_t header_write(char *buf, size_t size, size_t nmemb, void *userp)
+{
+    struct easyhttp_AsyncRequest *request = userp; //to check `cancel` flag
+    if (request->cancelled) {
+        thrd_exit(EASYHTTP_EXIT_CANCELLED);
+        return 0;
+    }
+
+    mtx_lock(&request->mutex);
+    char *header = string_duplicate_n(buf, size * nmemb);
+    if (!header) {
+        request->error = "failed to allocate memory for header";
+        return 0;
+    }
+
+
+    char *colon = strchr(header, ':');
+    if (!colon) {
+        free(header);
+        return size * nmemb;
+    }
+
+    *colon = '\0';
+    char *value = colon + 1;
+    while (*value == ' ' || *value == '\t') value++;
+
+    request->request.headers = easyhttp_headers_append(request->request.headers, header, value);
+    if (!request->request.headers || !request->request.headers->headers[request->request.headers->length - 1].key || !request->request.headers->headers[request->request.headers->length - 1].value) {
+        free(header);
+        request->error = "failed to allocate memory for header kv pairs";
+        return 0;
+    }
+
+    mtx_unlock(&request->mutex);
+    return size * nmemb;
 }
 
 static int easyhttp_thread_func(void *ptr)
@@ -77,13 +112,19 @@ static int easyhttp_thread_func(void *ptr)
         return handle_error(req, "failed to create curl handle");
     }
 
-    easyhttp_set_options(req->request.options, curl);
+    easyhttp_options_set(req->request.options, curl);
 
     curl_easy_setopt(curl, CURLOPT_URL, req->request.url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, buffer_write);
 
     req->request.response = easyhttp_buffer_create();
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, req);
+
+    req->request.headers = easyhttp_headers_create();
+    if (!req->request.headers) {
+        return handle_error(req, "failed to allocate memory for headers");
+    }
+
 
     CURLcode res = curl_easy_perform(curl);
     if (res != CURLE_OK) {
@@ -93,25 +134,6 @@ static int easyhttp_thread_func(void *ptr)
     mtx_lock(&req->mutex);
     {
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &req->request.response_code);
-
-        //get headers
-        struct curl_header *header = NULL;
-        while ((header = curl_easy_nextheader(curl, CURLH_HEADER, -1, header))) {
-            const char *key = header->name, *value = header->value;
-            req->request.header_count++;
-            req->request.headers = realloc(req->request.headers, req->request.header_count * sizeof(*req->request.headers));
-            if (!req->request.headers) {
-                return handle_error(req, "failed to allocate memory for headers");
-            }
-            req->request.headers[req->request.header_count - 1].key = strdup(key);
-            if (!req->request.headers[req->request.header_count - 1].key) {
-                return handle_error(req, "failed to allocate memory for header key");
-            }
-            req->request.headers[req->request.header_count - 1].value = strdup(value);
-            if (!req->request.headers[req->request.header_count - 1].value) {
-                return handle_error(req, "failed to allocate memory for header value");
-            }
-        }
         req->done = true;
     }
     mtx_unlock(&req->mutex);
@@ -136,7 +158,7 @@ int easyhttp_async_request(lua_State *L)
     request->request.url = luaL_checkstring(L, 1);
 
     const char *err = NULL;
-    request->request.options = easyhttp_parse_options(L, 2, &err);
+    request->request.options = easyhttp_options_parse(L, 2, &err);
     if (err) {
         lua_pushnil(L);
         lua_pushstring(L, err);
@@ -210,12 +232,12 @@ int easyhttp_async_request_response(lua_State *L)
         }
     }
 
-    lua_pushlstring(L, request->request.response->data, request->request.response->size);
+    lua_pushlstring(L, request->request.response->data, request->request.response->length);
     lua_pushinteger(L, request->request.response_code);
     lua_newtable(L);
-    for (size_t i = 0; i < request->request.header_count; i++) {
-        lua_pushstring(L, request->request.headers[i].value);
-        lua_setfield(L, -2, request->request.headers[i].key);
+    for (size_t i = 0; i < request->request.headers->length; i++) {
+        lua_pushstring(L, request->request.headers->headers[i].value);
+        lua_setfield(L, -2, request->request.headers->headers[i].key);
     }
     mtx_unlock(&request->mutex);
     return 3;
@@ -246,16 +268,9 @@ int easyhttp_async_request__gc(lua_State *L)
 
     mtx_destroy(&request->mutex);
 
-    free(request->request.options.headers);
+    easyhttp_options_free(&request->request.options);
     free(request->request.response);
-
-    if (request->request.headers) {
-        for (size_t i = 0; i < request->request.header_count; i++) {
-            free(request->request.headers[i].key);
-            free(request->request.headers[i].value);
-        }
-        free(request->request.headers);
-    }
+    easyhttp_headers_free(&request->request.headers);
 
     return 0;
 }

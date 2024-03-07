@@ -17,10 +17,7 @@ struct easyhttp_AsyncRequest {
         struct easyhttp_Buffer *response;
 
         long response_code;
-        size_t header_count;
-        struct {
-            char *key, *value;
-        } *headers;
+        struct easyhttp_Headers *headers;
     } request;
 
     const char *error;
