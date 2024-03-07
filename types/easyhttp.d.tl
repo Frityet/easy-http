@@ -16,9 +16,10 @@ local record easyhttp
         timeout: number
         follow_redirects: boolean
         max_redirects: number
+        output_file: FILE
     end
 
-    request: function(url: string, options: RequestOptions | nil): string | nil, integer | string, {string:string} | nil
+    request: function(url: string, options: RequestOptions | nil): string | boolean | nil, integer | string, {string:string} | nil
 
     record AsyncRequest
         is_done: function(AsyncRequest): boolean

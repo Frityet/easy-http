@@ -57,11 +57,12 @@ local easyhttp = {}
 ---@field timeout number?
 ---@field follow_redirects boolean?
 ---@field max_redirects number?
+---@field output_file file*?
 
 ---Sends a synchronous HTTP request, blocking the current thread until the request is complete.
 ---@param url string
 ---@param options easyhttp.RequestOptions?
----@return string? body, integer | string? code, { [string] : string }? headers
+---@return (string | true)? body, integer | string? code, { [string] : string }? headers
 function easyhttp.request(url, options) end
 
 ---@class easyhttp.AsyncRequest

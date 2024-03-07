@@ -67,7 +67,7 @@ describe("request", function ()
             })
             --[[@cast f file*]]
             local ok, err = f:close()
-            assert.truthy(response)
+            assert.is_true(response)
             assert.are_equal(200, code)
             assert.truthy(ok and not err)
             os.remove("test.json")
@@ -104,6 +104,31 @@ describe("request", function ()
             assert.falsy(response)
             assert.is_string(code)
         end)
+
+        -- it("can redirect", function ()
+        --     local easyhttp = require("easyhttp")
+        --     local response, code, headers = easyhttp.request("https://httpbin.org/redirect/1")
+        --     assert.truthy(response)
+        --     assert.truthy(code == 301 or code == 302)
+        -- end)
+
+        -- it("shouldn't follow redirects on follow_redirects = false", function ()
+        --     local easyhttp = require("easyhttp")
+        --     local response, code, headers = easyhttp.request("https://httpbin.org/redirect/1", {
+        --         follow_redirects = false
+        --     })
+        --     assert.truthy(response)
+        --     assert.truthy(code == 301 or code == 302)
+        -- end)
+
+        -- it("cancel on too many redirects", function ()
+        --     local easyhttp = require("easyhttp")
+        --     local response, code, headers = easyhttp.request("https://httpbin.org/redirect/10", {
+        --         max_redirects = 5
+        --     })
+        --     assert.truthy(response)
+        --     assert.truthy(code == 301 or code == 302)
+        -- end)
     end)
 
     describe("post", function ()

@@ -72,7 +72,10 @@ static int easyhttp_request(lua_State *L)
     long status_code;
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
 
-    lua_pushlstring(L, buffer->data, buffer->size);
+    if (opts.output_file)
+        lua_pushboolean(L, 1);
+    else
+        lua_pushlstring(L, buffer->data, buffer->size);
     lua_pushinteger(L, status_code);
 
     // Get headers
