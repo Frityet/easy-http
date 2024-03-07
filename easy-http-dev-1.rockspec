@@ -34,7 +34,7 @@ build = {
          libraries = {
             "curl"
          },
-         sources = {"easyhttp.c", "async.c", "compat-5.3.c"}
+         sources = { "easyhttp.c", "async.c", "compat-5.3.c" }
       }
    }
 }

@@ -24,7 +24,7 @@ function easyhttp.request(url: string, options: {
     timeout: number = 30,
     follow_redirects: boolean = true,
     max_redirects: number?,
-}?): string? body, integer status_code, { [string]: string } headers
+}?): (string body, integer status_code, { [string]: string } headers) | (nil, string error)
 */
 static int easyhttp_request(lua_State *L)
 {
@@ -37,43 +37,54 @@ static int easyhttp_request(lua_State *L)
     }
 
     CURL *curl = curl_easy_init();
-    struct easyhttp_Options opts = easyhttp_parse_options(L, 2);
+    const char *err = NULL;
+    struct easyhttp_Options opts = easyhttp_parse_options(L, 2, &err);
+    if (err) {
+        lua_pushnil(L);
+        lua_pushstring(L, err);
+        return 2;
+    }
 
     struct easyhttp_Buffer *buffer = easyhttp_buffer_create();
     if (!buffer) {
-        return luaL_error(L, "failed to allocate memory for buffer");
+        lua_pushnil(L);
+        lua_pushliteral(L, "failed to create buffer");
+        return 2;
     }
 
-    easyhttp_set_options(opts, &curl);
+    easyhttp_set_options(L, opts, curl);
     curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, easyhttp_buffer_write);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
+
+    if (!opts.output_file) {
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, easyhttp_buffer_write);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
+    } else {
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, *opts.output_file);
+    }
 
     CURLcode res = curl_easy_perform(curl);
     if (res != CURLE_OK) {
-        return luaL_error(L, "failed to perform request: %s", curl_easy_strerror(res));
+        lua_pushnil(L);
+        lua_pushfstring(L, "failed to perform request: %s", curl_easy_strerror(res));
+        return 2;
     }
 
     long status_code;
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
 
-    struct curl_slist *response_headers;
-    curl_easy_getinfo(curl, CURLINFO_COOKIELIST, &response_headers);
-
     lua_pushlstring(L, buffer->data, buffer->size);
     lua_pushinteger(L, status_code);
+
+    // Get headers
     lua_newtable(L);
-    for (struct curl_slist *header = response_headers; header; header = header->next) {
-        const char *colon = strchr(header->data, ':');
-        if (colon) {
-            lua_pushlstring(L, header->data, colon - header->data);
-            lua_pushstring(L, colon + 2);
-            lua_settable(L, -3);
-        }
+    struct curl_header *header = NULL;
+    while ((header = curl_easy_nextheader(curl, CURLH_HEADER, -1, header))) {
+        const char *key = header->name, *value = header->value;
+        lua_pushstring(L, key);
+        lua_pushstring(L, value);
+        lua_settable(L, -3);
     }
 
-    curl_slist_free_all(opts.headers);
-    curl_slist_free_all(response_headers);
     curl_easy_cleanup(curl);
     free(buffer);
     return 3;

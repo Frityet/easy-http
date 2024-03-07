@@ -7,9 +7,6 @@
 
 #include "async.h"
 
-#define COMPAT53_PREFIX
-#include "compat-5.3.h"
-
 #include <stdlib.h>
 #include <string.h>
 
@@ -32,9 +29,15 @@ int easyhttp_request_async(lua_State *L)
 
     request->url = luaL_checkstring(L, 1);
 
-    request->options = easyhttp_parse_options(L, 2);
+    const char *err = NULL;
+    request->options = easyhttp_parse_options(L, 2, &err);
+    if (err) {
+        lua_pushnil(L);
+        lua_pushstring(L, err);
+        return 2;
+    }
     request->curl = curl_easy_init();
-    easyhttp_set_options(request->options, &request->curl);
+    easyhttp_set_options(L, request->options, &request->curl);
 }
 
 int easyhttp_async_request__gc(lua_State *L)

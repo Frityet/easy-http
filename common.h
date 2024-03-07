@@ -22,7 +22,7 @@ struct easyhttp_Buffer {
 struct easyhttp_Options {
     const char *method, *body;
     int timeout, follow_redirects, max_redirects;
-
+    FILE **output_file;
     struct curl_slist *headers;
 };
 
@@ -35,25 +35,25 @@ static const struct easyhttp_Options EASYHTTP_DEFAULT_OPTIONS = {
     .headers = NULL
 };
 
-static struct easyhttp_Options easyhttp_parse_options(lua_State *L, int idx)
+static struct easyhttp_Options easyhttp_parse_options(lua_State *L, int idx, const char **error)
 {
     struct easyhttp_Options options = EASYHTTP_DEFAULT_OPTIONS;
 
     lua_getfield(L, idx, "method");
     if (!lua_isnil(L, -1)) {
-        options.method = lua_tostring(L, -1);
+        options.method = luaL_checkstring(L, -1);
     }
     lua_pop(L, 1);
 
     lua_getfield(L, idx, "body");
     if (!lua_isnil(L, -1)) {
-        options.body = lua_tostring(L, -1);
+        options.body = luaL_checkstring(L, -1);
     }
     lua_pop(L, 1);
 
     lua_getfield(L, idx, "timeout");
     if (!lua_isnil(L, -1)) {
-        options.timeout = lua_tointeger(L, -1);
+        options.timeout = luaL_checkinteger(L, -1);
     }
     lua_pop(L, 1);
 
@@ -65,32 +65,63 @@ static struct easyhttp_Options easyhttp_parse_options(lua_State *L, int idx)
 
     lua_getfield(L, idx, "max_redirects");
     if (!lua_isnil(L, -1)) {
-        options.max_redirects = lua_tointeger(L, -1);
+        options.max_redirects = luaL_checkinteger(L, -1);
+    }
+    lua_pop(L, 1);
+
+    lua_getfield(L, idx, "output_file");
+    if (!lua_isnil(L, -1)) {
+        options.output_file = luaL_checkudata(L, -1, "FILE*");
     }
     lua_pop(L, 1);
 
     lua_getfield(L, idx, "headers");
     if (lua_istable(L, -1)) {
         lua_pushnil(L);
-        while (lua_next(L, -2) != 0) {
-            const char *header = lua_tostring(L, -1);
-            options.headers = curl_slist_append(options.headers, header);
+
+        size_t alloc_siz = 0;
+        char *buf = malloc(1);
+        if (!buf) {
+            *error = "failed to allocate memory for headers";
+            return options;
+        }
+        while (lua_next(L, -2)) {
+            const char *key = luaL_checkstring(L, -2);
+            const char *value = luaL_checkstring(L, -1);
+            size_t key_len = strlen(key), value_len = strlen(value);
+            if (key_len + value_len + 3 > alloc_siz) {
+                alloc_siz = key_len + value_len + 3;
+                void *tmp = realloc(buf, alloc_siz);
+                if (!tmp) {
+                    *error = "failed to resize memory for headers";
+                    return options;
+                }
+                buf = tmp;
+            }
+
+            snprintf(buf, alloc_siz, "%s: %s", key, value);
+            options.headers = curl_slist_append(options.headers, buf);
             lua_pop(L, 1);
         }
+
+        lua_pop(L, 1);
     }
     lua_pop(L, 1);
 
+    *error = 0;
     return options;
 }
 
-static void easyhttp_set_options(struct easyhttp_Options options, CURL **curl)
+static inline void easyhttp_set_options(lua_State *L, struct easyhttp_Options options, CURL *curl)
 {
-    curl_easy_setopt(*curl, CURLOPT_CUSTOMREQUEST, options.method);
-    curl_easy_setopt(*curl, CURLOPT_POSTFIELDS, options.body);
-    curl_easy_setopt(*curl, CURLOPT_TIMEOUT, options.timeout);
-    curl_easy_setopt(*curl, CURLOPT_FOLLOWLOCATION, options.follow_redirects);
-    curl_easy_setopt(*curl, CURLOPT_MAXREDIRS, options.max_redirects);
-    curl_easy_setopt(*curl, CURLOPT_HTTPHEADER, options.headers);
+    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, options.method);
+    if (options.body)
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, options.body);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, options.timeout);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, options.follow_redirects);
+    curl_easy_setopt(curl, CURLOPT_MAXREDIRS, options.max_redirects);
+    if (options.headers)
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, options.headers);
 }
 
 #pragma region Buffer

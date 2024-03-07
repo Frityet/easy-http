@@ -20,7 +20,8 @@
     ],
     "workspace.library": [
         "/Users/frityet/Library/Application Support/Code/User/globalStorage/sumneko.lua/addonManager/addons/busted/module/library",
-        "${3rd}/luassert/library"
+        "${3rd}/luassert/library",
+        "/Users/frityet/Library/Application Support/Code/User/globalStorage/sumneko.lua/addonManager/addons/dkjson/module/library"
     ],
     "runtime.path": [
         "?.lua",
