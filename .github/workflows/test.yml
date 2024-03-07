@@ -6,38 +6,38 @@
 name: test
 
 on:
-    pull_request:
-    workflow_dispatch:
-    push:
-        branches: [main]
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches: [main]
 
 jobs:
-    Test:
-        strategy:
-            matrix:
-                lua-version: ["5.4", "5.3", "5.2", "5.1", "luajit"]
-                os: ["ubuntu-latest"]
-                include:
-                    - os: "macos-latest"
-                      lua-version: "5.4"
-                    - os: "windows-latest"
-                      lua-version: "luajit"
-        runs-on: ${{ matrix.os }}
+  Test:
+    strategy:
+      matrix:
+        lua-version: ["5.4", "5.3", "5.2", "5.1", "luajit"]
+        os: ["ubuntu-latest"]
+        include:
+          - os: "macos-latest"
+            lua-version: "5.4"
+          - os: "windows-latest"
+            lua-version: "luajit"
+    runs-on: ${{ matrix.os }}
 
-        steps:
-            - uses: actions/checkout@master
+    steps:
+      - uses: actions/checkout@master
 
-            - uses: leafo/gh-actions-lua@master
-              with:
-                  luaVersion: ${{ matrix.lua-version }}
+      - uses: leafo/gh-actions-lua@master
+        with:
+          luaVersion: ${{ matrix.lua-version }}
 
-            - uses: hishamhm/gh-actions-luarocks@master
+      - uses: hishamhm/gh-actions-luarocks@master
 
-            - name: Build
-              run: |
-                  luarocks make --only-deps
+      - name: Build
+        run: |
+          luarocks make
 
-            - name: Test
-              run: |
-                  luarocks lint easy-http-dev-1.rockspec
-                  luarocks test
+      - name: Test
+        run: |
+          luarocks lint easy-http-dev-1.rockspec
+          luarocks test
