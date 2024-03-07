@@ -52,6 +52,9 @@ describe("request", function ()
         it("should return a table of headers", function ()
             local easyhttp = require("easyhttp")
             local response, code, headers = easyhttp.request("https://httpbin.org/get")
+            assert.is_truthy(response)
+            assert.are_equal(200, code)
+            --[[@cast headers {[string]:string}]]
             assert.are_equal("application/json", headers["content-type"])
         end)
 
@@ -78,12 +81,13 @@ describe("request", function ()
                     ["User-Agent"] = "easyhttp"
                 }
             })
-            assert.truthy(response and code == 200)
+            assert.truthy(response)
+            assert.are_equal(200, code)
 
+            --[[@cast response string]]
             local data, _, err = json.decode(response)
             assert.truthy(data)
             --[[@cast data table]]
-
             assert.are_equal("easyhttp", data.headers["User-Agent"])
         end)
 
@@ -132,6 +136,10 @@ describe("request", function ()
                 method = "POST",
                 body = "data=Hello, World!"
             })
+            assert.truthy(response)
+            --[[@cast response string]]
+            assert.are_equal(200, code)
+            --[[@cast headers {[string]:string}]]
             assert.are_equal("application/json", headers["content-type"])
             assert.are_equal(code, 200)
             local data, _, err = json.decode(response)
@@ -139,6 +147,16 @@ describe("request", function ()
             --[[@cast data table]]
             assert.are_equal("Hello, World!", data.form.data)
         end)
+    end)
+
+    it("should timeout", function ()
+        local easyhttp = require("easyhttp")
+        local response, code, headers = easyhttp.request("https://httpbin.org/delay/10", {
+            timeout = 1
+        })
+        assert.falsy(response)
+        --[[@cast code string]]
+        assert.are_same("failed to perform request: Timeout was reached", code)
     end)
 end)
 

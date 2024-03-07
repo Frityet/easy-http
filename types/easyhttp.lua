@@ -38,9 +38,10 @@ return easyhttp
 ```
 ]]
 ---@class easyhttp
+---@field public _VERSION "0.1.0"
 local easyhttp = {}
 
----@enum easyhttp.HTTPMethod
+---@alias easyhttp.HTTPMethod
 ---| '"GET"'
 ---| '"POST"'
 ---| '"PUT"'
@@ -59,7 +60,7 @@ local easyhttp = {}
 
 ---Sends a synchronous HTTP request, blocking the current thread until the request is complete.
 ---@param url string
----@param options easyhttp.RequestOptions
+---@param options easyhttp.RequestOptions?
 ---@return string? body, integer | string? code, { [string] : string }? headers
 function easyhttp.request(url, options) end
 
@@ -80,7 +81,7 @@ function AsyncRequest:cancel() end
 
 ---Sends an asynchronous HTTP request, returning an AsyncRequest object.
 ---@param url string
----@param options easyhttp.RequestOptions
+---@param options easyhttp.RequestOptions?
 ---@return easyhttp.AsyncRequest? request, string? error
 function easyhttp.async_request(url, options) end
 

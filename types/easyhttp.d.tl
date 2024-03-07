@@ -18,7 +18,7 @@ local record easyhttp
         max_redirects: number
     end
 
-    request: function(url: string, options: RequestOptions): string | nil, integer | string, {string:string} | nil
+    request: function(url: string, options: RequestOptions | nil): string | nil, integer | string, {string:string} | nil
 
     record AsyncRequest
         is_done: function(AsyncRequest): boolean
@@ -26,7 +26,7 @@ local record easyhttp
         cancel: function(AsyncRequest): boolean, string | nil
     end
 
-    async_request: function(url: string, options: RequestOptions): AsyncRequest | nil, string | nil
+    async_request: function(url: string, options: RequestOptions | nil): AsyncRequest | nil, string | nil
 end
 
 return easyhttp

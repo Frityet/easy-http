@@ -27,24 +27,32 @@ describe("async request", function ()
         it("should exist", function ()
             local easyhttp = require("easyhttp")
             local request = easyhttp.async_request("https://httpbin.org/get")
+            assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
             assert.truthy(request.is_done)
         end)
 
         it("should be a function", function ()
             local easyhttp = require("easyhttp")
             local request = easyhttp.async_request("https://httpbin.org/get")
+            assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
             assert.is_function(request.is_done)
         end)
 
         it("should return false", function ()
             local easyhttp = require("easyhttp")
             local request = easyhttp.async_request("https://httpbin.org/get")
+            assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
             assert.falsy(request:is_done())
         end)
 
         it("should return true", function ()
             local easyhttp = require("easyhttp")
             local request = easyhttp.async_request("https://httpbin.org/get")
+            assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
             while not request:is_done() do
                 --wait
             end
@@ -56,18 +64,24 @@ describe("async request", function ()
         it("should exist", function ()
             local easyhttp = require("easyhttp")
             local request = easyhttp.async_request("https://httpbin.org/get")
+            assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
             assert.truthy(request.response)
         end)
 
         it("should be a function", function ()
             local easyhttp = require("easyhttp")
             local request = easyhttp.async_request("https://httpbin.org/get")
+            assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
             assert.is_function(request.response)
         end)
 
         it("should return a string, integer, table", function ()
             local easyhttp = require("easyhttp")
             local request = easyhttp.async_request("https://httpbin.org/get")
+            assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
             local response, code, headers = request:response()
             assert.is_string(response)
             assert.is_number(code)
@@ -78,6 +92,7 @@ describe("async request", function ()
             local easyhttp = require("easyhttp")
             local request = easyhttp.async_request("https://httpbin.org/status/404")
             assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
             local response, code = request:response()
             assert.are_equal(404, code)
         end)
@@ -86,6 +101,7 @@ describe("async request", function ()
             local easyhttp = require("easyhttp")
             local request = easyhttp.async_request("https://njfenjerfnooerfoiernobfoberfboeoibfreboreffrbijoburevbouev.com")
             assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
             local response, code = request:response()
             assert.is_nil(response)
             assert.is_string(code)
@@ -96,18 +112,24 @@ describe("async request", function ()
         it("should exist", function ()
             local easyhttp = require("easyhttp")
             local request = easyhttp.async_request("https://httpbin.org/get")
+            assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
             assert.truthy(request.cancel)
         end)
 
         it("should be a function", function ()
             local easyhttp = require("easyhttp")
             local request = easyhttp.async_request("https://httpbin.org/get")
+            assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
             assert.is_function(request.cancel)
         end)
 
         it("should cancel the request", function ()
             local easyhttp = require("easyhttp")
             local request = easyhttp.async_request("https://httpbin.org/delay/5")
+            assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
             assert.is_truthy(request:cancel())
             local response, code = request:response()
             assert.is_nil(response)
@@ -117,6 +139,8 @@ describe("async request", function ()
         it("should return false if request is complete", function ()
             local easyhttp = require("easyhttp")
             local request = easyhttp.async_request("https://httpbin.org/get")
+            assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
             while not request:is_done() do
                 --wait
             end
