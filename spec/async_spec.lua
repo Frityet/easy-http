@@ -20,7 +20,12 @@ describe("async request", function ()
         assert.truthy(request)
         local tname = tostring(request)
         --make sure the first part is easyhttp.AsyncRequest
-        assert.are_equal("easyhttp.AsyncRequest", tname:sub(1, #"easyhttp.AsyncRequest"))
+        --only if lua _VERSION is 5.4 will `tosring` return the type name, on <=5.3 it will return `userdata`
+        if _VERSION == "Lua 5.4" then
+            assert.are_equal("easyhttp.AsyncRequest", tname:sub(1, #"easyhttp.AsyncRequest"))
+        else
+            assert.are_equal("userdata", tname:sub(1, #"userdata"))
+        end
     end)
 
     describe("is done", function ()
@@ -42,7 +47,7 @@ describe("async request", function ()
 
         it("should return false", function ()
             local easyhttp = require("easyhttp")
-            local request = easyhttp.async_request("https://httpbin.org/get")
+            local request = easyhttp.async_request("https://httpbin.org/delay/10")
             assert.truthy(request)
             --[[@cast request easyhttp.AsyncRequest]]
             assert.falsy(request:is_done())

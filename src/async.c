@@ -78,8 +78,7 @@ static size_t header_write(char *buf, size_t size, size_t nmemb, void *userp)
     mtx_lock(&request->mutex);
     char *header = string_duplicate_n(buf, size * nmemb);
     if (!header) {
-        request->error = "failed to allocate memory for header";
-        return 0;
+        return handle_error(request, "failed to allocate memory for header"), 0;
     }
 
 
@@ -99,8 +98,7 @@ static size_t header_write(char *buf, size_t size, size_t nmemb, void *userp)
     request->request.headers = easyhttp_headers_append(request->request.headers, header, value);
     if (!request->request.headers || !request->request.headers->headers[request->request.headers->length - 1].key || !request->request.headers->headers[request->request.headers->length - 1].value) {
         free(header);
-        request->error = "failed to allocate memory for header kv pairs";
-        return 0;
+        return handle_error(request, "failed to allocate memory for header kv pairs"), 0;
     }
 
     mtx_unlock(&request->mutex);
@@ -156,6 +154,7 @@ function easyhttp.async_request(url: string, {
 int easyhttp_async_request(lua_State *L)
 {
     struct easyhttp_AsyncRequest *request = lua_newuserdata(L, sizeof(struct easyhttp_AsyncRequest));
+    *request = (struct easyhttp_AsyncRequest) {0};
     luaL_setmetatable(L, EASYHTTP_ASYNC_REQUEST_TNAME);
 
     request->request.url = luaL_checkstring(L, 1);

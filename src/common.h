@@ -6,7 +6,8 @@
 #ifndef EASYHTTP_COMMON_H
 #define EASYHTTP_COMMON_H
 
-#define COMPAT53_PREFIX
+// TODO: COMPAT53_prefix should be defined so we arent bloating the library
+// #define COMPAT53_PREFIX
 #include "extern/compat-5.3.h"
 
 #if __STDC_VERSION__ < 201112L || defined(__STDC_NO_THREADS__)
