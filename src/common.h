@@ -96,6 +96,9 @@ static size_t easyhttp_headers_write(char *buf, size_t size, size_t nmemb, void 
     *colon = '\0';
     char *value = colon + 1;
     while (*value == ' ' || *value == '\t') value++;
+    //set last char to null to ignore trailing newlines
+    char *end = value + strlen(value) - 1;
+    while (*end == '\n' || *end == '\r') *end-- = '\0';
 
     *headers = easyhttp_headers_append(*headers, header, value);
     if (!*headers || !(*headers)->headers[(*headers)->length - 1].key || !(*headers)->headers[(*headers)->length - 1].value) {

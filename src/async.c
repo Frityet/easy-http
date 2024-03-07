@@ -92,6 +92,9 @@ static size_t header_write(char *buf, size_t size, size_t nmemb, void *userp)
     *colon = '\0';
     char *value = colon + 1;
     while (*value == ' ' || *value == '\t') value++;
+    //set last char to null to ignore trailing newlines
+    char *end = value + strlen(value) - 1;
+    while (*end == '\n' || *end == '\r') *end-- = '\0';
 
     request->request.headers = easyhttp_headers_append(request->request.headers, header, value);
     if (!request->request.headers || !request->request.headers->headers[request->request.headers->length - 1].key || !request->request.headers->headers[request->request.headers->length - 1].value) {
