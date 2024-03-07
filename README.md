@@ -118,7 +118,7 @@ print(headers)
 ```
 
 Output:
-```lua
+```lua.
 true
 200
 table: 0x7fe98630b4c0

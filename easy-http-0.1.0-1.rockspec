@@ -1,9 +1,8 @@
 rockspec_format = "3.0"
 package = "easy-http"
-version = "dev-1"
+version = "0.1.0-1"
 source = {
-   url = "git+https://github.com/Frityet/easy-http.git",
-   tag = "0.1.0"
+   url = "git+https://github.com/Frityet/easy-http.git"
 }
 description = {
    summary = "Easy and portable HTTP(s) requests",
