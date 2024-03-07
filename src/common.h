@@ -7,9 +7,17 @@
 #define EASYHTTP_COMMON_H
 
 #define COMPAT53_PREFIX
-#include "compat-5.3.h"
+#include "extern/compat-5.3.h"
+
+#if __STDC_VERSION__ < 201112L || defined(__STDC_NO_THREADS__)
+#   include "extern/tinycthread.h"
+#else
+    // If the compiler claims to support C11, you might still need to include threads.h for C11 thread support
+#   include <threads.h>
+#endif
 
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 
 #include <curl/curl.h>
@@ -21,7 +29,8 @@ struct easyhttp_Buffer {
 
 struct easyhttp_Options {
     const char *method, *body;
-    int timeout, follow_redirects, max_redirects;
+    bool follow_redirects;
+    int timeout, max_redirects;
     FILE **output_file;
     struct curl_slist *headers;
 };
@@ -30,7 +39,7 @@ static const struct easyhttp_Options EASYHTTP_DEFAULT_OPTIONS = {
     .method = "GET",
     .body = NULL,
     .timeout = 0,
-    .follow_redirects = 1,
+    .follow_redirects = false,
     .max_redirects = -1,
     .headers = NULL
 };
@@ -112,7 +121,7 @@ static struct easyhttp_Options easyhttp_parse_options(lua_State *L, int idx, con
     return options;
 }
 
-static inline void easyhttp_set_options(lua_State *L, struct easyhttp_Options options, CURL *curl)
+static inline void easyhttp_set_options(struct easyhttp_Options options, CURL *curl)
 {
     curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, options.method);
     if (options.body)

@@ -62,6 +62,7 @@ describe("request", function ()
             local response, code, headers = easyhttp.request("https://httpbin.org/get", {
                 output_file = f
             })
+            --[[@cast f file*]]
             local ok, err = f:close()
             assert.truthy(response)
             assert.are_equal(200, code)
@@ -81,6 +82,8 @@ describe("request", function ()
 
             local data, _, err = json.decode(response)
             assert.truthy(data)
+            --[[@cast data table]]
+
             assert.are_equal("easyhttp", data.headers["User-Agent"])
         end)
 
@@ -133,7 +136,9 @@ describe("request", function ()
             assert.are_equal(code, 200)
             local data, _, err = json.decode(response)
             assert.truthy(data)
+            --[[@cast data table]]
             assert.are_equal("Hello, World!", data.form.data)
         end)
     end)
 end)
+

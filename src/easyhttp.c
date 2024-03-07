@@ -52,7 +52,7 @@ static int easyhttp_request(lua_State *L)
         return 2;
     }
 
-    easyhttp_set_options(L, opts, curl);
+    easyhttp_set_options(opts, curl);
     curl_easy_setopt(curl, CURLOPT_URL, url);
 
     if (!opts.output_file) {
@@ -90,9 +90,16 @@ static int easyhttp_request(lua_State *L)
     return 3;
 }
 
+static const struct luaL_Reg ASYNC_METHODS[] = {
+    { "is_done", easyhttp_async_request_is_done },
+    { "response", easyhttp_async_request_response },
+    { "cancel", easyhttp_async_request_cancel },
+    {0}
+};
+
 static const struct luaL_Reg LIBRARY[] = {
-    {"request", easyhttp_request},
-    {"request_async", easyhttp_request_async},
+    { "request", easyhttp_request },
+    { "async_request", easyhttp_async_request },
     {0}
 };
 
@@ -111,6 +118,12 @@ int luaopen_easyhttp(lua_State *L)
     lua_pushliteral(L, "__gc");
     lua_pushcfunction(L, easyhttp_async_request__gc);
     lua_settable(L, -3);
+
+    lua_pushliteral(L, "__index");
+    lua_newtable(L);
+    luaL_setfuncs(L, ASYNC_METHODS, 0);
+    lua_settable(L, -3);
+
     lua_pop(L, 1);
     return 1;
 }

@@ -26,7 +26,8 @@ build = {
    modules = {
       easyhttp = {
          incdirs = {
-            "$(CURL_INCDIR)"
+            "$(CURL_INCDIR)",
+            "src"
          },
          libdirs = {
             "$(CURL_LIBDIR)"
@@ -34,7 +35,7 @@ build = {
          libraries = {
             "curl"
          },
-         sources = { "easyhttp.c", "async.c", "compat-5.3.c" }
+         sources = { "src/easyhttp.c", "src/async.c", "src/extern/compat-5.3.c", "src/extern/tinycthread.c" }
       }
    }
 }

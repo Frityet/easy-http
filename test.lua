@@ -1,4 +1,4 @@
 local easyhttp = require("easyhttp")
-local response, code, headers = easyhttp.request("https://njfenjerfnooerfoiernobfoberfboeoibfreboreffrbijoburevbouev.com")
-
-print(response, code, headers)
+local request = assert(easyhttp.async_request("https://njfenjerfnooerfoiernobfoberfboeoibfreboreffrbijoburevbouev.com"))
+local response, code = request:response()
+print(response, code)
