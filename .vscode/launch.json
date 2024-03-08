@@ -7,14 +7,59 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug",
+            "name": "Debug-tests-luajit",
             "program": "/usr/local/opt/luajit/bin/luajit",
             "args": [
                 "-e", "package.path=\"/Users/frityet/Documents/easy-http/./lua_modules/share/lua/5.1/?.lua;/Users/frityet/Documents/easy-http/./lua_modules/share/lua/5.1/?/init.lua;/Users/frityet/.luarocks/share/lua/5.1/?.lua;/Users/frityet/.luarocks/share/lua/5.1/?/init.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?/init.lua;\"..package.path;package.cpath=\"/Users/frityet/Documents/easy-http/./lua_modules/lib/lua/5.1/?.so;/Users/frityet/.luarocks/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/?.so;\"..package.cpath;local k,l,_=pcall(require,\"luarocks.loader\") _=k and l.add_context(\"busted\",\"2.2.0-1\")",
                 "${workspaceFolder}/lua_modules/lib/luarocks/rocks-5.1/busted/2.2.0-1/bin/busted",
             ],
             "cwd": "${workspaceFolder}",
-            "preLaunchTask": "Build",
+            "preLaunchTask": "Build JIT",
+            "env": {
+                "LUAROCKS_SYSCONFDIR": "/usr/local/etc/luarocks",
+            }
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug-luajit",
+            "program": "/usr/local/opt/luajit/bin/luajit",
+            "args": [
+                "-e", "package.path=\"/Users/frityet/Documents/easy-http/./lua_modules/share/lua/5.1/?.lua;/Users/frityet/Documents/easy-http/./lua_modules/share/lua/5.1/?/init.lua;/Users/frityet/.luarocks/share/lua/5.1/?.lua;/Users/frityet/.luarocks/share/lua/5.1/?/init.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?/init.lua;\"..package.path;package.cpath=\"/Users/frityet/Documents/easy-http/./lua_modules/lib/lua/5.1/?.so;/Users/frityet/.luarocks/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/?.so;\"..package.cpath",
+                "${workspaceFolder}/test.lua",
+            ],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Build JIT",
+            "env": {
+                "LUAROCKS_SYSCONFDIR": "/usr/local/etc/luarocks",
+            }
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug-tests",
+            "program": "/usr/local/bin/lua-sanitised",
+            "args": [
+                "-e", "package.path=\"/Users/frityet/Documents/easy-http/./lua_modules/share/lua/5.4/?.lua;/Users/frityet/Documents/easy-http/./lua_modules/share/lua/5.4/?/init.lua;/Users/frityet/.luarocks/share/lua/5.4/?.lua;/Users/frityet/.luarocks/share/lua/5.4/?/init.lua;/usr/local/share/lua/5.4/?.lua;/usr/local/share/lua/5.4/?/init.lua;\"..package.path;package.cpath=\"/Users/frityet/Documents/easy-http/./lua_modules/lib/lua/5.4/?.so;/Users/frityet/.luarocks/lib/lua/5.4/?.so;/usr/local/lib/lua/5.4/?.so;\"..package.cpath;local k,l,_=pcall(require,\"luarocks.loader\") _=k and l.add_context(\"busted\",\"2.2.0-1\")",
+                "${workspaceFolder}/lua_modules/lib/luarocks/rocks-5.1/busted/2.2.0-1/bin/busted", "-v"
+            ],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Build 5.4",
+            "env": {
+                "LUAROCKS_SYSCONFDIR": "/usr/local/etc/luarocks",
+            }
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug",
+            "program": "/usr/local/bin/lua-sanitised",
+            "args": [
+                "-e", "package.path=\"/Users/frityet/Documents/easy-http/./lua_modules/share/lua/5.4/?.lua;/Users/frityet/Documents/easy-http/./lua_modules/share/lua/5.4/?/init.lua;/Users/frityet/.luarocks/share/lua/5.4/?.lua;/Users/frityet/.luarocks/share/lua/5.4/?/init.lua;/usr/local/share/lua/5.4/?.lua;/usr/local/share/lua/5.4/?/init.lua;\"..package.path;package.cpath=\"/Users/frityet/Documents/easy-http/./lua_modules/lib/lua/5.4/?.so;/Users/frityet/.luarocks/lib/lua/5.4/?.so;/usr/local/lib/lua/5.4/?.so;\"..package.cpath",
+                "${workspaceFolder}/test.lua",
+            ],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Build 5.4",
             "env": {
                 "LUAROCKS_SYSCONFDIR": "/usr/local/etc/luarocks",
             }

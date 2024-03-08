@@ -183,5 +183,64 @@ describe("request", function ()
         --[[@cast code string]]
         assert.are_same("failed to perform request: Timeout was reached", code)
     end)
+
+    describe("callbacks", function()
+        it("should allow for the on_data callback", function ()
+            local easyhttp = require("easyhttp")
+            local cb_called = false
+            local response, code, headers = easyhttp.request("https://httpbin.org/get", {
+                on_data = function (data, size)
+                    cb_called = true
+                    assert.is_string(data)
+                    assert.is_number(size)
+                end
+            })
+            assert.truthy(response)
+            assert.are_equal(200, code)
+            assert.truthy(cb_called)
+        end)
+
+        it("should cancel the request if on_data returns false", function ()
+            local easyhttp = require("easyhttp")
+            local ran_once = false
+            local response, code, headers = easyhttp.request("https://hil-speed.hetzner.com/100MB.bin", {
+                on_data = function ()
+                    assert.falsy(ran_once)
+                    ran_once = true
+                    return false
+                end
+            })
+            assert.falsy(response)
+            assert.are_same("failed to perform request: Failed writing received data to disk/application", code)
+        end)
+
+        it("should allow for the on_progress callback", function ()
+            local easyhttp = require("easyhttp")
+            local cb_called = false
+            local response, code, headers = easyhttp.request("https://hil-speed.hetzner.com/100MB.bin", {
+                on_progress = function (dltotal, dlnow, ultotal, ulnow)
+                    cb_called = true
+                    assert.is_number(dltotal)
+                    assert.is_number(dlnow)
+                    assert.is_number(ultotal)
+                    assert.is_number(ulnow)
+                end
+            })
+            assert.truthy(response)
+            assert.are_equal(200, code)
+            assert.truthy(cb_called)
+        end)
+
+        it("should cancel the request if result is non-zero", function ()
+            local easyhttp = require("easyhttp")
+            local response, code, headers = easyhttp.request("https://hil-speed.hetzner.com/100MB.bin", {
+                on_progress = function ()
+                    return 1
+                end
+            })
+            assert.falsy(response)
+            assert.are_same("failed to perform request: Operation was aborted by an application callback", code)
+        end)
+    end)
 end)
 

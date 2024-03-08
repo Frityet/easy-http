@@ -16,11 +16,21 @@
 #   include <threads.h>
 #endif
 
+//if has atomics then define easyhttp_atomic(T) as _Atomic(T)
+//else define easyhttp_atomic(T) as T
+#if defined(__STDC_NO_ATOMICS__) || !defined(__STDC_NO_THREADS__)
+#   define easyhttp_Atomic_t(T) T
+#else
+#   define easyhttp_Atomic_t(T) _Atomic(T)
+#endif
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 
 #include <curl/curl.h>
+
+typedef int LuaReference_t;
 
 struct easyhttp_Buffer {
     size_t cap, length;
@@ -33,6 +43,8 @@ struct easyhttp_Options {
     int timeout, max_redirects;
     FILE **output_file;
     struct curl_slist *headers;
+
+    LuaReference_t on_data, on_progress;
 };
 
 struct easyhttp_Header {
@@ -128,56 +140,46 @@ static void easyhttp_headers_free(struct easyhttp_Headers **headers)
 
 static const struct easyhttp_Options EASYHTTP_DEFAULT_OPTIONS = {
     .method = "GET",
-    .body = NULL,
-    .timeout = 0,
-    .follow_redirects = false,
     .max_redirects = -1,
-    .headers = NULL
+    .on_data = LUA_NOREF,
+    .on_progress = LUA_NOREF,
 };
+
+#define options_getfield(key, conv, ...) do {\
+    lua_getfield(L, idx, #key);\
+    if (!lua_isnil(L, -1)) {\
+        options.key = conv(L, -1, ##__VA_ARGS__);\
+    }\
+    lua_pop(L, 1);\
+} while(0)
+
+static LuaReference_t easyhttp_lua_checkfunction(lua_State *L, int idx)
+{
+    luaL_checktype(L, idx, LUA_TFUNCTION);
+    int ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    lua_pushnil(L); //is popped by options_getfield
+    return ref;
+}
 
 static struct easyhttp_Options easyhttp_options_parse(lua_State *L, int idx, const char **error)
 {
     struct easyhttp_Options options = EASYHTTP_DEFAULT_OPTIONS;
 
-    lua_getfield(L, idx, "method");
-    if (!lua_isnil(L, -1)) {
-        options.method = luaL_checkstring(L, -1);
-    }
-    lua_pop(L, 1);
-
-    lua_getfield(L, idx, "body");
-    if (!lua_isnil(L, -1)) {
-        options.body = luaL_checkstring(L, -1);
-    }
-    lua_pop(L, 1);
-
-    lua_getfield(L, idx, "timeout");
-    if (!lua_isnil(L, -1)) {
-        options.timeout = luaL_checkinteger(L, -1);
-    }
-    lua_pop(L, 1);
-
-    lua_getfield(L, idx, "follow_redirects");
-    if (!lua_isnil(L, -1)) {
-        options.follow_redirects = lua_toboolean(L, -1);
-    }
-    lua_pop(L, 1);
-
-    lua_getfield(L, idx, "max_redirects");
-    if (!lua_isnil(L, -1)) {
-        options.max_redirects = luaL_checkinteger(L, -1);
-    }
-    lua_pop(L, 1);
-
-    lua_getfield(L, idx, "output_file");
-    if (!lua_isnil(L, -1)) {
-        options.output_file = luaL_checkudata(L, -1, "FILE*");
-    }
-    lua_pop(L, 1);
+    options_getfield(output_file,       luaL_checkudata, "FILE*");
+    options_getfield(method,            luaL_checkstring);
+    options_getfield(body,              luaL_checkstring);
+    options_getfield(timeout,           luaL_checkinteger);
+    options_getfield(follow_redirects,  lua_toboolean);
+    options_getfield(max_redirects,     luaL_checkinteger);
+    options_getfield(on_data,           easyhttp_lua_checkfunction);
+    options_getfield(on_progress,       easyhttp_lua_checkfunction);
 
     lua_getfield(L, idx, "headers");
-    if (lua_istable(L, -1)) {
-        lua_pushnil(L);
+    if (!lua_isnil(L, -1)) {
+        if (!lua_istable(L, -1)) {
+            *error = "headers must be a table";
+            return options;
+        }
 
         size_t alloc_siz = 0;
         char *buf = malloc(1);
@@ -185,6 +187,8 @@ static struct easyhttp_Options easyhttp_options_parse(lua_State *L, int idx, con
             *error = "failed to allocate memory for headers";
             return options;
         }
+
+        lua_pushnil(L);
         while (lua_next(L, -2)) {
             const char  *key = luaL_checkstring(L, -2),
                         *value = luaL_checkstring(L, -1);
@@ -266,9 +270,8 @@ static struct easyhttp_Buffer *easyhttp_buffer_append(struct easyhttp_Buffer *bu
     return buffer;
 }
 
-static int easyhttp_buffer_write(void *data, size_t size, size_t nmemb, void *userp)
+static int easyhttp_buffer_write(void *data, size_t size, size_t nmemb, struct easyhttp_Buffer **buffer)
 {
-    struct easyhttp_Buffer **buffer = userp;
     size_t new_size = (*buffer)->length + size * nmemb;
 
     *buffer = easyhttp_buffer_append(*buffer, size * nmemb, data);

@@ -58,9 +58,8 @@ describe("async request", function ()
             local request = easyhttp.async_request("https://httpbin.org/get")
             assert.truthy(request)
             --[[@cast request easyhttp.AsyncRequest]]
-            while not request:is_done() do
-                --wait
-            end
+            local response = request:response()
+            assert.truthy(response)
             assert.truthy(request:is_done())
         end)
     end)
@@ -153,5 +152,63 @@ describe("async request", function ()
         end)
     end)
 
+    describe("progress", function ()
+        it("should exist", function ()
+            local easyhttp = require("easyhttp")
+            local request = easyhttp.async_request("https://httpbin.org/get")
+            assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
+            assert.truthy(request.progress)
+        end)
+
+        it("should be a function", function ()
+            local easyhttp = require("easyhttp")
+            local request = easyhttp.async_request("https://httpbin.org/get")
+            assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
+            assert.is_function(request.progress)
+        end)
+
+        it("should return 4 numbers", function ()
+            local easyhttp = require("easyhttp")
+            local request = easyhttp.async_request("https://httpbin.org/get")
+            assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
+            local dltotal, dlnow, ultotal, ulnow = request:progress()
+            assert.is_number(dltotal)
+            assert.is_number(dlnow)
+            assert.is_number(ultotal)
+            assert.is_number(ulnow)
+        end)
+    end)
+
+    describe("data", function ()
+        it("should exist", function ()
+            local easyhttp = require("easyhttp")
+            local request = easyhttp.async_request("https://httpbin.org/get")
+            assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
+            assert.truthy(request.data)
+        end)
+
+        it("should be a function", function ()
+            local easyhttp = require("easyhttp")
+            local request = easyhttp.async_request("https://httpbin.org/get")
+            assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
+            assert.is_function(request.data)
+        end)
+
+        it("should return a string?, integer?", function ()
+            local easyhttp = require("easyhttp")
+            local request = easyhttp.async_request("https://httpbin.org/get")
+            assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
+            local data, size = request:data()
+            local data_t, size_t = type(data), type(size)
+            assert.truthy(data_t == "string" or data_t == "nil")
+            assert.truthy(size_t == "number" or size_t == "nil")
+        end)
+    end)
 end)
 

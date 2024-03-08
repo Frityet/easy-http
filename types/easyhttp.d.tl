@@ -24,6 +24,8 @@ local record easyhttp
     record AsyncRequest
         is_done: function(AsyncRequest): boolean
         response: function(AsyncRequest): string | nil, integer | string, {string:string} | nil
+        progress: function(AsyncRequest): number, number, number, number
+        data: function(AsyncRequest): string | nil, integer | nil
         cancel: function(AsyncRequest): boolean, string | nil
     end
 

@@ -58,6 +58,9 @@ local easyhttp = {}
 ---@field follow_redirects boolean?
 ---@field max_redirects number?
 ---@field output_file file*?
+---@field on_progress (fun(dltotal: number, dlnow: number, ultotal: number, ulnow: number): integer?)?
+---@field on_data (fun(data: string, size: integer, nmemb: integer): string | false | nil)?
+
 
 ---Sends a synchronous HTTP request, blocking the current thread until the request is complete.
 ---@param url string
@@ -79,6 +82,14 @@ function AsyncRequest:response() end
 ---Cancels the request, returns true if the request was successfully cancelled, false otherwise, and why it was not cancelled.
 ---@return boolean, string?
 function AsyncRequest:cancel() end
+
+---Gets the progress of the request
+---@return number dltotal, number dlnow, number ultotal, number ulnow
+function AsyncRequest:progress() end
+
+---Gets the data of the request (if any). This call does not block, so if it is called before `:is_done()` the data will likley be incomplete.
+---@return string? data, integer? size
+function AsyncRequest:data() end
 
 ---Sends an asynchronous HTTP request, returning an AsyncRequest object.
 ---@param url string

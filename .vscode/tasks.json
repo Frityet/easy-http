@@ -2,12 +2,21 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build",
-            "command": "./luarocks",
-            "type": "process",
-            "args": [
-                "make"
+            "label": "Build 5.4",
+            "command": "luarocks init --lua-version=5.4 && ./luarocks make",
+            "type": "shell",
+            "problemMatcher": [
+
             ],
+            "presentation": {
+                "reveal": "always"
+            },
+            "group": "build"
+        },
+        {
+            "label": "Build JIT",
+            "command": "luarocks init --lua-version=5.1 && ./luarocks make",
+            "type": "shell",
             "problemMatcher": [
 
             ],

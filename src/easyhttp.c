@@ -16,6 +16,81 @@
 
 #define EASYHTTP_VERSION "0.1.0"
 
+struct WriteArgs {
+    struct easyhttp_Buffer **buffer;
+    FILE *file;
+    struct easyhttp_Options options;
+    lua_State *L;
+};
+
+struct ProgressArgs {
+    LuaReference_t on_progress;
+    lua_State *L;
+};
+
+static int write_callback(void *data, size_t size, size_t nmemb, void *userp)
+{
+    struct WriteArgs *args = (struct WriteArgs *)userp;
+    size_t fsiz = size * nmemb;
+
+    char *modified_output = NULL;
+    if (args->options.on_data != LUA_NOREF) {
+        lua_rawgeti(args->L, LUA_REGISTRYINDEX, args->options.on_data);
+        lua_pushlstring(args->L, data, fsiz);
+        lua_pushinteger(args->L, size);
+        lua_pushinteger(args->L, nmemb);
+        lua_call(args->L, 3, 1);
+        switch (lua_type(args->L, -1)) {
+            case LUA_TSTRING: {
+                size_t slen = 0;
+                const char *str = lua_tolstring(args->L, -1, &slen);
+                modified_output = string_duplicate_n(str, slen);
+                data = modified_output;
+                size = 1;
+                nmemb = slen;
+                break;
+            }
+            case LUA_TBOOLEAN: {
+                if (lua_toboolean(args->L, -1) == false)
+                    return 0;
+                break;
+            }
+            default: break;
+        }
+    }
+
+    if (args->options.output_file) {
+        fwrite(data, size, nmemb, args->file);
+    } else {
+        easyhttp_buffer_write(data, size, nmemb, args->buffer);
+    }
+
+    free(modified_output);
+
+    return fsiz;
+}
+
+static int progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)
+{
+    struct ProgressArgs *args = (struct ProgressArgs *)clientp;
+
+    int retc = 0;
+    if (args->on_progress != LUA_NOREF) {
+        lua_rawgeti(args->L, LUA_REGISTRYINDEX, args->on_progress);
+        lua_pushnumber(args->L, dltotal);
+        lua_pushnumber(args->L, dlnow);
+        lua_pushnumber(args->L, ultotal);
+        lua_pushnumber(args->L, ulnow);
+        lua_call(args->L, 4, 1);
+
+        if (lua_isinteger(args->L, -1)) {
+            retc = lua_tointeger(args->L, -1);
+        }
+    }
+
+    return retc;
+}
+
 /*
 function easyhttp.request(url: string, options: {
     method: "GET" | "POST" | "PUT" | "DELETE" | string = "GET",
@@ -55,11 +130,23 @@ static int easyhttp_request(lua_State *L)
     easyhttp_options_set(opts, curl);
     curl_easy_setopt(curl, CURLOPT_URL, url);
 
-    if (!opts.output_file) {
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, easyhttp_buffer_write);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
-    } else {
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, *opts.output_file);
+    struct WriteArgs args = {
+        .buffer = &buffer,
+        .file = opts.output_file ? *opts.output_file : NULL,
+        .options = opts,
+        .L = L
+    };
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &args);
+
+    struct ProgressArgs progress_args = {
+        .on_progress = opts.on_progress,
+        .L = L
+    };
+    if (opts.on_progress != LUA_NOREF) {
+        curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
+        curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, progress_callback);
+        curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, &progress_args);
     }
 
     struct easyhttp_Headers *headers = easyhttp_headers_create();
@@ -105,6 +192,8 @@ static const struct luaL_Reg ASYNC_METHODS[] = {
     { "is_done", easyhttp_async_request_is_done },
     { "response", easyhttp_async_request_response },
     { "cancel", easyhttp_async_request_cancel },
+    { "data", easyhttp_async_request_data },
+    { "progress", easyhttp_async_request_progress },
     {0}
 };
 

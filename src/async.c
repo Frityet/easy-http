@@ -105,6 +105,24 @@ static size_t header_write(char *buf, size_t size, size_t nmemb, void *userp)
     return size * nmemb;
 }
 
+static int progress_callback(struct easyhttp_AsyncRequest *data, double dltotal, double dlnow, double ultotal, double ulnow)
+{
+    mtx_lock(&data->mutex);
+    if (data->cancelled) {
+        mtx_unlock(&data->mutex);
+        thrd_exit(EASYHTTP_EXIT_CANCELLED);
+        return 0;
+    }
+
+    data->request.progress.dlnow = dlnow;
+    data->request.progress.dltotal = dltotal;
+    data->request.progress.ulnow = ulnow;
+    data->request.progress.ultotal = ultotal;
+
+    mtx_unlock(&data->mutex);
+    return 0;
+}
+
 static int easyhttp_thread_func(void *ptr)
 {
     struct easyhttp_AsyncRequest *req = ptr;
@@ -141,16 +159,6 @@ static int easyhttp_thread_func(void *ptr)
     return 0;
 }
 
-/*
-function easyhttp.async_request(url: string, {
-    method: "GET" | "POST" | "PUT" | "DELETE" | string = "GET",
-    headers: { [string]: string }?,
-    body: string?,
-    timeout: number = 30,
-    follow_redirects: boolean = true,
-    max_redirects: number?,
-}?, callback: function(body: string?, status_code: integer, headers: { [string]: string })): easyhttp.AsyncRequest?, string? error
-*/
 int easyhttp_async_request(lua_State *L)
 {
     struct easyhttp_AsyncRequest *request = lua_newuserdata(L, sizeof(struct easyhttp_AsyncRequest));
@@ -245,6 +253,33 @@ int easyhttp_async_request_response(lua_State *L)
     return 3;
 }
 
+int easyhttp_async_request_progress(lua_State *L)
+{
+    struct easyhttp_AsyncRequest *request = luaL_checkudata(L, 1, EASYHTTP_ASYNC_REQUEST_TNAME);
+    mtx_lock(&request->mutex);
+    lua_pushnumber(L, request->request.progress.dlnow);
+    lua_pushnumber(L, request->request.progress.dltotal);
+    lua_pushnumber(L, request->request.progress.ulnow);
+    lua_pushnumber(L, request->request.progress.ultotal);
+    mtx_unlock(&request->mutex);
+    return 4;
+}
+
+int easyhttp_async_request_data(lua_State *L)
+{
+    struct easyhttp_AsyncRequest *request = luaL_checkudata(L, 1, EASYHTTP_ASYNC_REQUEST_TNAME);
+    mtx_lock(&request->mutex);
+    if (request->request.response) {
+        lua_pushlstring(L, request->request.response->data, request->request.response->length);
+        lua_pushinteger(L, request->request.response->length);
+    } else {
+        lua_pushnil(L);
+        lua_pushnil(L);
+    }
+    mtx_unlock(&request->mutex);
+    return 2;
+}
+
 int easyhttp_async_request_cancel(lua_State *L)
 {
     struct easyhttp_AsyncRequest *request = luaL_checkudata(L, 1, EASYHTTP_ASYNC_REQUEST_TNAME);
@@ -262,12 +297,23 @@ int easyhttp_async_request_cancel(lua_State *L)
     return 1;
 }
 
+//if extensions
+#if defined(__GNUC__)
+__attribute__((no_sanitize("address", "thread")))
+#endif
 int easyhttp_async_request__gc(lua_State *L)
 {
     struct easyhttp_AsyncRequest *request = luaL_checkudata(L, 1, EASYHTTP_ASYNC_REQUEST_TNAME);
-    request->cancelled = true;
-    thrd_join(request->thread, NULL);
 
+    request->cancelled = true;
+    int res = 0;
+    //if sanitizers are enabled, just don't join, it doesn't work for some reason
+#if !defined(__SANITIZE_ADDRESS__)
+    int err = thrd_join(request->thread, &res);
+    if (err != thrd_success) {
+        return luaL_error(L, "failed to join thread: %s", thread_error_message(err));
+    }
+#endif
     mtx_destroy(&request->mutex);
 
     easyhttp_options_free(&request->request.options);
