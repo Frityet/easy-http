@@ -17,6 +17,9 @@ local record easyhttp
         follow_redirects: boolean
         max_redirects: number
         output_file: FILE
+
+        on_data: function(data: string, size: integer, nmemb: integer): string | boolean | nil
+        on_progress: function(dltotal: number, dlnow: number, ultotal: number, ulnow: number): number | nil
     end
 
     request: function(url: string, options: RequestOptions | nil): string | boolean | nil, integer | string, {string:string} | nil
