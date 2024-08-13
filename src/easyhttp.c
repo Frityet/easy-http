@@ -14,7 +14,7 @@
 #include "common.h"
 #include "async.h"
 
-#define EASYHTTP_VERSION "0.1.0"
+#define EASYHTTP_VERSION "0.1.2"
 
 struct WriteArgs {
     struct easyhttp_Buffer **buffer;

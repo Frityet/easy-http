@@ -92,6 +92,18 @@ describe("async request", function ()
             assert.is_table(headers)
         end)
 
+        it("should return the headers", function ()
+            local easyhttp = require("easyhttp")
+            local request = easyhttp.async_request("https://httpbin.org/get")
+            assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
+            local response, code, headers = request:response()
+            assert.truthy(response)
+            assert.are_equal(200, code)
+            --[[@cast headers {[string]:string}]]
+            assert.are_equal("application/json", headers["content-type"])
+        end)
+
         it("should return 404 for a non-existent page", function ()
             local easyhttp = require("easyhttp")
             local request = easyhttp.async_request("https://httpbin.org/status/404")
@@ -179,6 +191,19 @@ describe("async request", function ()
             assert.is_number(dlnow)
             assert.is_number(ultotal)
             assert.is_number(ulnow)
+        end)
+
+        it("should return non-0 numbers for a download", function ()
+            local easyhttp = require("easyhttp")
+            local request = easyhttp.async_request("https://hil-speed.hetzner.com/100MB.bin")
+            assert.truthy(request)
+            --[[@cast request easyhttp.AsyncRequest]]
+            while not request:is_done() do
+
+            end
+            local dltotal, dlnow, ultotal, ulnow = request:progress()
+            assert.is_number(dltotal)
+            assert.truthy(dltotal > 0)
         end)
     end)
 

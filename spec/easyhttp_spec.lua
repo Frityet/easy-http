@@ -100,35 +100,35 @@ describe("request", function ()
 
         it("should return error for an unresolved domain", function ()
             local easyhttp = require("easyhttp")
-            local response, code, headers = easyhttp.request("https://njfenjerfnooerfoiernobfoberfboeoibfreboreffrbijoburevbouev.com")
+            local response, code, headers = easyhttp.request("htp://www.example .com")
             assert.falsy(response)
             assert.is_string(code)
         end)
 
-        -- it("can redirect", function ()
-        --     local easyhttp = require("easyhttp")
-        --     local response, code, headers = easyhttp.request("https://httpbin.org/redirect/1")
-        --     assert.truthy(response)
-        --     assert.truthy(code == 301 or code == 302)
-        -- end)
+        it("can redirect", function ()
+            local easyhttp = require("easyhttp")
+            local response, code, headers = easyhttp.request("https://httpbin.org/redirect/1")
+            assert.truthy(response)
+            assert.truthy(code == 301 or code == 302)
+        end)
 
-        -- it("shouldn't follow redirects on follow_redirects = false", function ()
-        --     local easyhttp = require("easyhttp")
-        --     local response, code, headers = easyhttp.request("https://httpbin.org/redirect/1", {
-        --         follow_redirects = false
-        --     })
-        --     assert.truthy(response)
-        --     assert.truthy(code == 301 or code == 302)
-        -- end)
+        it("shouldn't follow redirects on follow_redirects = false", function ()
+            local easyhttp = require("easyhttp")
+            local response, code, headers = easyhttp.request("https://httpbin.org/redirect/1", {
+                follow_redirects = false
+            })
+            assert.truthy(response)
+            assert.truthy(code == 301 or code == 302)
+        end)
 
-        -- it("cancel on too many redirects", function ()
-        --     local easyhttp = require("easyhttp")
-        --     local response, code, headers = easyhttp.request("https://httpbin.org/redirect/10", {
-        --         max_redirects = 5
-        --     })
-        --     assert.truthy(response)
-        --     assert.truthy(code == 301 or code == 302)
-        -- end)
+        it("cancel on too many redirects", function ()
+            local easyhttp = require("easyhttp")
+            local response, code, headers = easyhttp.request("https://httpbin.org/redirect/10", {
+                max_redirects = 5
+            })
+            assert.truthy(response)
+            assert.truthy(code == 301 or code == 302)
+        end)
     end)
 
     describe("post", function ()

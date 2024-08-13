@@ -75,16 +75,16 @@ static size_t header_write(char *buf, size_t size, size_t nmemb, void *userp)
         return 0;
     }
 
-    mtx_lock(&request->mutex);
     char *header = string_duplicate_n(buf, size * nmemb);
     if (!header) {
         return handle_error(request, "failed to allocate memory for header"), 0;
     }
 
-
+    mtx_lock(&request->mutex);
     char *colon = strchr(header, ':');
     if (!colon) {
         free(header);
+        mtx_unlock(&request->mutex);
         return size * nmemb;
     }
 
@@ -98,6 +98,7 @@ static size_t header_write(char *buf, size_t size, size_t nmemb, void *userp)
     request->request.headers = easyhttp_headers_append(request->request.headers, header, value);
     if (!request->request.headers || !request->request.headers->headers[request->request.headers->length - 1].key || !request->request.headers->headers[request->request.headers->length - 1].value) {
         free(header);
+        mtx_unlock(&request->mutex);
         return handle_error(request, "failed to allocate memory for header kv pairs"), 0;
     }
 
@@ -126,6 +127,11 @@ static int progress_callback(struct easyhttp_AsyncRequest *data, double dltotal,
 static int easyhttp_thread_func(void *ptr)
 {
     struct easyhttp_AsyncRequest *req = ptr;
+    req->request.response = easyhttp_buffer_create();
+    if (!req->request.response) {
+        return handle_error(req, "failed to allocate memory for response");
+    }
+
     CURL *curl = curl_easy_init();
     if (!curl) {
         return handle_error(req, "failed to create curl handle");
@@ -135,9 +141,12 @@ static int easyhttp_thread_func(void *ptr)
 
     curl_easy_setopt(curl, CURLOPT_URL, req->request.url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, buffer_write);
-
-    req->request.response = easyhttp_buffer_create();
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, req);
+    curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, header_write);
+    curl_easy_setopt(curl, CURLOPT_HEADERDATA, req);
+    curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
+    curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, progress_callback);
+    curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, req);
 
     req->request.headers = easyhttp_headers_create();
     if (!req->request.headers) {
